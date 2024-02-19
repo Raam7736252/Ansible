@@ -1,0 +1,97 @@
+---
+#Changing the HostName of the Machine[ Value Of the HostName Should be add in /roles/Vars/main.yml]
+- name: Changing hostname
+  #become: yes
+  shell: sudo hostnamectl set-hostname {{ hostname }}
+
+#Checking the HostName is Correct or Not
+- name: Display Hostname
+  command: hostname
+  register: hostname_output
+
+#Printing the HostName
+- name: Print Hostname
+  debug:
+    var: hostname_output.stdout_lines
+
+#Change The TimeZone [HardCore the Value as "Asia/Kolkata"]
+- name : Changeing TimeZone
+  shell:
+    sudo timedatectl set-timezone "Asia/Kolkata"
+
+#Checking the timezone
+- name: Display Timezone
+  shell: timedatectl | grep "Time zone"
+  register: timezone_output
+
+#Print The TimeZone to Verify
+- name: Print Timezone
+  debug:
+     var: timezone_output.stdout_lines
+
+#Check the Uptime of the Machine
+- name: Display System Uptime
+  command: uptime
+  register: uptime_output
+
+#Print the Uptime of the Machine
+
+- name: Print System Uptime
+  debug:
+    var: uptime_output.stdout_lines
+
+#Install Net-Tools Package
+- name: Install Net-tools
+  package:
+    name: net-tools
+    state: present
+
+#Checking IP Address by Net_tools
+- name: Run ifconfig
+  command: ifconfig
+  register: ifconfig_output
+
+#Print the ip Address Details
+- name: Display ifconfig output
+  debug:
+     var: ifconfig_output.stdout_lines
+
+#Creating the user by [provide the username as variable in /role/vars/main.yml]
+- name: Create a new user
+  become: yes
+  shell: sudo useradd -m -s /bin/bash {{ username }}
+  register: user_created
+- name: Add user to sudo group
+  become: yes
+  user:
+    name: "{{ username }}"
+    groups: sudo
+  when: user_created.changed
+
+#Set the password for that user by [providing the password as variable in /role/vars/main.yml]
+- name: Set password for the user
+  become: yes
+  shell: echo "{{ username }}:{{ password }}" | chpasswd
+  when: user_created.rc == 0
+#Set permissions for .bash_profile"
+#Changing the SSH Configuration for user Login
+- name: Change PasswordAuthentication in sshd_config
+  lineinfile:
+    path: "/etc/ssh/sshd_config"
+    regexp: "^PasswordAuthentication"
+    line: "PasswordAuthentication yes"
+    state: present
+#if the sshd confg file is sucessfully rewrite need to restart the ssh serverics,once's its sucessfull the notify call the handlers,in handlers we worte as script for restart the ssh service, if the sshd config is not configured sucessfully it will skip the step of restart ssh service
+  notify: Restart SSH service
+- name: Ensure .bash_profile exists
+  stat:
+    path: /home/devops/.bash_profile
+  register: file_stat
+
+- name: Set permissions for .bash_profile
+  file:
+    path: /home/devops/.bash_profile
+    owner: devops
+    group: devops
+    mode: "0644"
+  when: file_stat.stat.exists
