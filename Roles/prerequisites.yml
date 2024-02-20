@@ -1,0 +1,7 @@
+---
+-name : Prerequisites Roles
+ hosts: 
+ become:
+ gather_facts:
+ roles:
+  -prerequisites
