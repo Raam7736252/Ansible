@@ -1,0 +1,7 @@
+- name: Clone Private Git Repo, Execute Shell Script, and Set up Cron Jobs
+  hosts: 
+  gather_facts: true
+  become: true
+  roles:
+   -ShellScript's
+   
