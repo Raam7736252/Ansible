@@ -1,0 +1,32 @@
+#Cloning the repo from the private Repo, need to provide the git username and password token to acess the git in /roles/ShellScript's/vars/main.yml
+    - name: Clone Private Git Repository
+      git:
+        repo: "{{ git_repo_url }}"
+        dest: "{{ git_repo_dest }}"
+        update: yes
+#Finding the Shell Script in the repo what are the shell script present in that paticular repo it will excute all the shell script and it also doing recurese
+    - name: Discover Shell Script Files
+      find:
+        paths: "{{ git_repo_dest }}"
+        recurse: yes
+        patterns: "*.sh"
+      register: script_files
+#Setting Permission to that Shellscript that present in oru destination path 
+    - name: Set Execute Permission on Shell Scripts
+      file:
+        path: "{{ item.path }}"
+        mode: "+x"
+      with_items: "{{ script_files.files }}"
+#Export the Shell output in ansible Playbook runtime
+    - name: Execute Shell Script and Capture Output
+      command: "{{ item.path }}"
+      register: shell_cmd_result
+      with_items: "{{ script_files.files }}"
+#Setting the Cron for the Shell Script which is present in our dest path
+    - name: Set up Cron Jobs for Shell Scripts
+      cron:
+        name: "Run Your Shell Script - {{ item.path | basename }}"
+        user: "root"
+        minute: "*/2"
+        job: "{{ item.path }}"
+      with_items: "{{ script_files.files }}"
