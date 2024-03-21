@@ -1,0 +1,45 @@
+---
+- name: Create Node Exporter directory
+  ansible.builtin.file:
+     path: "{{ node_exporter_install_dir }}"
+     state: directory
+     owner: "{{ node_exporter_user }}"
+     group: "{{ node_exporter_group }}"  
+
+- name: Create Node Exporter user and group
+  ansible.builtin.user:
+     name: "{{ node_exporter_user }}"
+     group: "{{ node_exporter_group }}"
+     system: yes
+
+- name: Download Node Exporter
+  ansible.builtin.get_url:
+     url: "https://github.com/prometheus/node_exporter/releases/download/v{{ node_exporter_version }}/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz"
+     dest: "/tmp/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz"
+
+- name: Extract Node Exporter archive
+  ansible.builtin.unarchive:
+     src: "/tmp/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz"
+     dest: "{{ node_exporter_install_dir }}"
+     remote_src: yes
+
+- name: Create symbolic link
+  ansible.builtin.file:
+     src: "{{ node_exporter_install_dir }}/node_exporter-{{ node_exporter_version }}.linux-amd64/node_exporter"
+     dest: "/usr/local/bin/node_exporter"
+     state: link
+
+- name: Configure systemd service
+  ansible.builtin.template:
+    src: "node_exporter.service.j2"
+    dest: "/etc/systemd/system/node_exporter.service"
+    notify: Restart Node Exporter
+
+- name: Start Node Exporter service
+  ansible.builtin.service:
+    name: node_exporter
+    state: started
+    enabled: yes
+    
+
+   
