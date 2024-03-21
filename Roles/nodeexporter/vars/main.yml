@@ -1,0 +1,4 @@
+ node_exporter_version: "1.2.2"  # Change to the desired version
+ node_exporter_user: "node_exporter"
+ node_exporter_group: "node_exporter"
+ node_exporter_install_dir: "/opt/node_exporter"
