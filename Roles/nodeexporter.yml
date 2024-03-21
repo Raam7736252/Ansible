@@ -1,0 +1,61 @@
+---
+- name: Install Node Exporter
+  hosts: loki
+  become: true
+  vars:
+    node_exporter_version: "1.6.0"  # Define the version of Node Exporter here
+  tasks:
+    - name: Create directory for Node Exporter binary
+      file:
+        path: "/usr/local/bin/node_exporter-{{ node_exporter_version }}"
+        state: directory
+        mode: "0755"
+
+    - name: Download Node Exporter binary
+      get_url:
+        url: "https://github.com/prometheus/node_exporter/releases/download/v{{ node_exporter_version }}/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz"
+        dest: "/tmp/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz"
+
+    - name: Extract Node Exporter binary
+      unarchive:
+        src: "/tmp/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz"
+        dest: "/usr/local/bin/node_exporter-{{ node_exporter_version }}"
+        remote_src: yes
+        creates: "/usr/local/bin/node_exporter-{{ node_exporter_version }}/node_exporter"
+
+    - name: Create symbolic link for Node Exporter binary
+      file:
+        src: "/usr/local/bin/node_exporter-{{ node_exporter_version }}/node_exporter"
+        dest: "/usr/local/bin/node_exporter"
+
+    - name: Create Node Exporter user
+      user:
+        name: node_exporter
+        shell: /bin/false
+        system: yes
+
+    - name: Set ownership of Node Exporter binary
+      file:
+        path: "/usr/local/bin/node_exporter"
+        owner: node_exporter
+        group: node_exporter
+        mode: "0755"
+
+    - name: Configure systemd service for Node Exporter
+      template:
+        src: node_exporter.service.j2
+        dest: /etc/systemd/system/node_exporter.service
+      notify:
+        - restart node_exporter
+
+    - name: Start Node Exporter service
+      service:
+        name: node_exporter
+        state: started
+        enabled: yes
+
+  handlers:
+    - name: restart node_exporter
+      service:
+        name: node_exporter
+        state: restarted
