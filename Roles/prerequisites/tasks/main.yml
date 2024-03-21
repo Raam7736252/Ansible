@@ -29,22 +29,16 @@
   debug:
      var: timezone_output.stdout_lines
 
-#Check the Uptime of the Machine
-- name: Display System Uptime
-  command: uptime
-  register: uptime_output
-
-#Print the Uptime of the Machine
-
-- name: Print System Uptime
-  debug:
-    var: uptime_output.stdout_lines
-
 #Install Net-Tools Package
 - name: Install Net-tools
   package:
     name: net-tools
     state: present
+#Install Unzip Tool
+- name: Install Unzip Tool
+  package:
+    name: unzip
+    state: present    
 
 #Checking IP Address by Net_tools
 - name: Run ifconfig
