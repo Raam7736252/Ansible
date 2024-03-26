@@ -1,0 +1,58 @@
+---
+- name: Install Promtail
+  hosts: node
+  become: true
+  tasks:
+    - name: Update the apt repository
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install unzip package
+      apt:
+        name: unzip
+        state: present
+
+    - name: Download Promtail binary
+      get_url:
+        url: "https://github.com/grafana/loki/releases/download/v2.4.1/promtail-linux-amd64.zip"
+        dest: "/tmp/promtail-linux-amd64.zip"
+
+    - name: Unzip Promtail binary
+      unarchive:
+        src: "/tmp/promtail-linux-amd64.zip"
+        dest: "/usr/local/bin"
+        remote_src: yes
+      notify: restart promtail
+
+    - name: Create directories for Promtail config and logs
+      file:
+        path: "{{ item }}"
+        state: directory
+        mode: '0755'
+      with_items:
+        - "/etc/promtail"
+        - "/var/log/promtail"
+
+    - name: Create Promtail configuration file
+      copy:
+        src: promtail-config.yml
+        dest: "/etc/promtail/promtail-config.yml"
+      notify: restart promtail
+
+    - name: Create Promtail systemd service file
+      copy:
+        src: promtail.service
+        dest: "/etc/systemd/system/promtail.service"
+      notify: restart promtail
+
+    - name: Reload systemd daemon
+      systemd:
+        daemon_reload: yes
+
+  handlers:
+    - name: restart promtail
+      systemd:
+        name: promtail
+        state: restarted
+        enabled: yes
