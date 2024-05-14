@@ -1,0 +1,10 @@
+---
+ - name: Testing the Git Hub Branch
+   hosts: all
+   become: yes
+   tasks:
+    - name: creating a dir
+      file:
+       src: /home/ubuntu/sampledir
+       state: present
+       
